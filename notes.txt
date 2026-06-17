@@ -1,0 +1,26 @@
+#Sun Aug 22 05:40:10 ICT 2021
+produk=qr,itmx
+qr.master.password=postgres
+qr.master.enc=1
+qr.slave.port=5433
+itmx.master.db=postgres
+qr.master.user=postgres
+qr.slave.db=postgres
+itmx.slave.user=postgres
+itmx.master.password=qptuhsft
+qr.slave.enc=1
+itmx.slave.port=5432
+itmx.slave.db=postgres
+qr.slave.user=postgres
+itmx.master.ip=192.168.90.3
+itmx.master.user=postgres
+itmx.slave.password=qptuhsft
+qr.slave.ip=192.168.90.3
+itmx.slave.ip=192.168.90.2
+qr.master.ip=192.168.90.2
+itmx.master.enc=1
+itmx.master.port=5432
+qr.slave.password=qptuhsft
+itmx.slave.enc=1
+qr.master.db=postgres
+qr.master.port=5433
