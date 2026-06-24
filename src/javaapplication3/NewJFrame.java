@@ -78,7 +78,7 @@ public class NewJFrame extends javax.swing.JFrame {
         status1 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("monitoring streaming replication postgresql 8.3");
+        setTitle("monitoring streaming replication postgresql 8.4");
 
         jPanel1.setBackground(new java.awt.Color(0, 0, 255));
 
@@ -175,10 +175,11 @@ public class NewJFrame extends javax.swing.JFrame {
                     .addComponent(combo1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButton3))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton4)
-                    .addComponent(jLabel1)
-                    .addComponent(master1))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jButton4)
+                        .addComponent(master1)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(slave1)
@@ -225,18 +226,14 @@ public class NewJFrame extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
-        getAccessibleContext().setAccessibleName("monitoring streaming replication postgresql 8.3");
+        getAccessibleContext().setAccessibleName("monitoring streaming replication postgresql 8.4");
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -249,6 +246,8 @@ public class NewJFrame extends javax.swing.JFrame {
         {            
             sentlsn="";
             replaylsn="";
+            String replaylsn2 = "";            
+            String sentlsn2 = "";
             String temp = produk.next();
             String masterip=con.GetProp(temp+".master.ip");
             String masterport=con.GetProp(temp+".master.port");
@@ -258,6 +257,13 @@ public class NewJFrame extends javax.swing.JFrame {
             String clientaddr=con.GetProp(temp+".slave.ip");
             String appname=con.GetProp(temp+".slave.appname");
             String status = getlsn(masterip, masterport, masteruser, masterpass, masterdb, appname, clientaddr, sentlsn, replaylsn);                            
+            if (status=="TIDAK SINKRON")
+            {
+                String status2=getlsn(masterip, masterport, masteruser, masterpass, masterdb, appname, clientaddr, sentlsn2, replaylsn2);
+                if (replaylsn!=replaylsn2){
+                    status="SEDANG NGEJAR";
+                } else {status="TIDAK SINKRON";}
+            }            
             DefaultTableModel model = (DefaultTableModel) tableStatus.getModel();
             model.addRow(new Object[]{temp,appname,clientaddr,sentlsn,replaylsn,status});
         }                
@@ -276,6 +282,7 @@ public class NewJFrame extends javax.swing.JFrame {
             String clientaddr=con.GetProp(temp+".slave.ip");
             String appname=con.GetProp(temp+".slave.appname");
             String status = getlsn(masterip, masterport, masteruser, masterpass, masterdb, appname, clientaddr, sentlsn, replaylsn);
+
             master1.setText(sentlsn);
             slave1.setText(replaylsn);
             status1.setText(temp+" "+status);
@@ -330,6 +337,47 @@ public class NewJFrame extends javax.swing.JFrame {
             {hasil="SINKRON";}
             else {hasil="TIDAK SINKRON";}
                 
+            connection1.close();
+            return hasil;
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(NewJFrame.class.getName()).log(Level.SEVERE, null, ex);
+            return "Koneksi gagal";
+        }        
+    }
+    
+    private String getlsn2(String masterip, String masterport, String masteruser, String masterpass, String masterdb
+    ,String appname, String clientaddr, String sentlsn, String replaylsn){
+        String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb;
+        String masterusername = masteruser;
+        String masterpassword = masterpass;
+        String sent_lsn = "";
+        String replay_lsn = "";
+        String hasil;
+        try {
+            Connection connection1= DriverManager.getConnection(jdbcURL1, masterusername,masterpassword);
+            String sql1 = "select sent_lsn,replay_lsn from pg_stat_replication "
+                    + "where application_name='"+appname+"'"
+                    + "and client_addr='"+clientaddr+"'";
+            Statement statement1 = connection1.createStatement();
+            
+            ResultSet result1 = statement1.executeQuery(sql1);
+            while (result1.next()) {
+                sent_lsn = result1.getString("sent_lsn");
+                replay_lsn = result1.getString("replay_lsn");
+            }            
+
+            sentlsn = sent_lsn;
+            replaylsn = replay_lsn;
+            this.sentlsn=sentlsn;
+            this.replaylsn=replaylsn;
+            hasil=replay_lsn;
+/*            if (replaylsn.isEmpty()) 
+            {hasil="TIDAK SINKRON";}
+            else if (sentlsn.equals(replaylsn)) 
+            {hasil="SINKRON";}
+            else {hasil="TIDAK SINKRON";}
+ */               
             connection1.close();
             return hasil;
             
