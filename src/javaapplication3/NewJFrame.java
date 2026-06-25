@@ -346,46 +346,6 @@ public class NewJFrame extends javax.swing.JFrame {
         }        
     }
     
-    private String getlsn2(String masterip, String masterport, String masteruser, String masterpass, String masterdb
-    ,String appname, String clientaddr, String sentlsn, String replaylsn){
-        String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb;
-        String masterusername = masteruser;
-        String masterpassword = masterpass;
-        String sent_lsn = "";
-        String replay_lsn = "";
-        String hasil;
-        try {
-            Connection connection1= DriverManager.getConnection(jdbcURL1, masterusername,masterpassword);
-            String sql1 = "select sent_lsn,replay_lsn from pg_stat_replication "
-                    + "where application_name='"+appname+"'"
-                    + "and client_addr='"+clientaddr+"'";
-            Statement statement1 = connection1.createStatement();
-            
-            ResultSet result1 = statement1.executeQuery(sql1);
-            while (result1.next()) {
-                sent_lsn = result1.getString("sent_lsn");
-                replay_lsn = result1.getString("replay_lsn");
-            }            
-
-            sentlsn = sent_lsn;
-            replaylsn = replay_lsn;
-            this.sentlsn=sentlsn;
-            this.replaylsn=replaylsn;
-            hasil=replay_lsn;
-/*            if (replaylsn.isEmpty()) 
-            {hasil="TIDAK SINKRON";}
-            else if (sentlsn.equals(replaylsn)) 
-            {hasil="SINKRON";}
-            else {hasil="TIDAK SINKRON";}
- */               
-            connection1.close();
-            return hasil;
-            
-        } catch (SQLException ex) {
-            Logger.getLogger(NewJFrame.class.getName()).log(Level.SEVERE, null, ex);
-            return "Koneksi gagal";
-        }        
-    }
     /**
      * @param args the command line arguments
      */
