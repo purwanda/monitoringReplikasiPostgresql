@@ -318,6 +318,7 @@ public class NewJFrame extends javax.swing.JFrame {
     private String getlsn(String masterip, String masterport, String masteruser, String masterpass, String masterdb
     ,String appname, String clientaddr, String sentlsn, String replaylsn){
         String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb;
+//        String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb+"?options=-c%20TimeZone=Asia/Jakarta";
         String masterusername = masteruser;
         String masterpassword = masterpass;
         String sent_lsn = "";
