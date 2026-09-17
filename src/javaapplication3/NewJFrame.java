@@ -27,6 +27,7 @@ public class NewJFrame extends javax.swing.JFrame {
     public String slavewal=null;
     public String sentlsn= null;
     public String replaylsn=null;
+    public String replaylsn2=null;
     Configs con = new Configs();
     Scanner listproduk = new Scanner(con.GetProp("produk"));    
     /**
@@ -34,6 +35,11 @@ public class NewJFrame extends javax.swing.JFrame {
      */
     public NewJFrame() {
         initComponents();
+        tableStatus.setDefaultRenderer(
+            Object.class,
+            new StatusColorRenderer()
+            );
+        
     System.out.println(System.getProperty("java.version"));
     System.out.println(System.getProperty("java.home"));        
         listproduk.useDelimiter(",");
@@ -71,17 +77,17 @@ public class NewJFrame extends javax.swing.JFrame {
         buttonSave = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         combo1 = new javax.swing.JComboBox<>();
-        jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         master1 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         slave1 = new javax.swing.JLabel();
         status1 = new javax.swing.JLabel();
+        cek = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("monitoring streaming replication postgresql 8.4");
+        setTitle("monitoring streaming replication postgresql 8.5");
 
         jPanel1.setBackground(new java.awt.Color(102, 204, 255));
 
@@ -121,14 +127,6 @@ public class NewJFrame extends javax.swing.JFrame {
             }
         });
 
-        jButton3.setBackground(new java.awt.Color(255, 255, 0));
-        jButton3.setText("CEK");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
-            }
-        });
-
         jButton4.setBackground(new java.awt.Color(255, 255, 204));
         jButton4.setText("CLEAR");
         jButton4.addActionListener(new java.awt.event.ActionListener() {
@@ -147,6 +145,15 @@ public class NewJFrame extends javax.swing.JFrame {
 
         status1.setBackground(new java.awt.Color(153, 204, 255));
         status1.setText("status");
+
+        cek.setBackground(new java.awt.Color(255, 255, 0));
+        cek.setText("CEK");
+        cek.setName("cek"); // NOI18N
+        cek.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cekActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -168,8 +175,8 @@ public class NewJFrame extends javax.swing.JFrame {
                     .addComponent(status1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, 85, Short.MAX_VALUE))
+                    .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, 85, Short.MAX_VALUE)
+                    .addComponent(cek, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -178,7 +185,7 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(combo1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton3))
+                    .addComponent(cek))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -244,6 +251,8 @@ public class NewJFrame extends javax.swing.JFrame {
             .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
+        getAccessibleContext().setAccessibleName("monitoring streaming replication postgresql 8.5");
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
@@ -255,8 +264,9 @@ public class NewJFrame extends javax.swing.JFrame {
         {            
             sentlsn="";
             replaylsn="";
-            String replaylsn2 = "";            
+            replaylsn2 = "";            
             String sentlsn2 = "";
+            String status="";
             String temp = produk.next();
             String masterip=con.GetProp(temp+".master.ip");
             String masterport=con.GetProp(temp+".master.port");
@@ -264,38 +274,33 @@ public class NewJFrame extends javax.swing.JFrame {
             String masterpass=con.dectext(con.GetProp(temp+".master.password"));
             String masterdb=con.GetProp(temp+".master.db");
             String clientaddr=con.GetProp(temp+".slave.ip");
-            String appname=con.GetProp(temp+".slave.appname");
-            String status = getlsn(masterip, masterport, masteruser, masterpass, masterdb, appname, clientaddr, sentlsn, replaylsn);                            
-            if (status=="TIDAK SINKRON")
+            String appname=con.GetProp(temp+".slave.appname");               
+            LsnData data1 = getlsn(masterip, masterport, masteruser,masterpass, masterdb, appname, clientaddr);
+            status=data1.getStatus();
+            if ("TIDAK SINKRON".equals(data1.getStatus()))
             {
-                String status2=getlsn(masterip, masterport, masteruser, masterpass, masterdb, appname, clientaddr, sentlsn2, replaylsn2);
-                if (replaylsn!=replaylsn2){
-                    status="SEDANG NGEJAR";
-                } else {status="TIDAK SINKRON";}
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(NewJFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                LsnData data2 = getlsn(masterip, masterport, masteruser,masterpass, masterdb, appname, clientaddr);                
+/*
+                System.out.println("replaylsn:"+ data1.getReplayLsn());
+                System.out.println("replaylsn2:"+ data2.getReplayLsn());
+                System.out.println("status2:"+data2.getStatus());
+                System.out.println("sentlsn:"+ data1.getSentLsn());
+                System.out.println("sentlsn2:"+ data2.getSentLsn());                
+*/
+                if (!data1.getReplayLsn().equals(data2.getReplayLsn())) {
+                    status = "SEDANG NGEJAR";
+                } else {status="TIDAK SINKRON";}                               
             }            
+
             DefaultTableModel model = (DefaultTableModel) tableStatus.getModel();
-            model.addRow(new Object[]{temp,appname,clientaddr,sentlsn,replaylsn,status});
+            model.addRow(new Object[]{temp,appname,clientaddr,data1.getSentLsn(),data1.getReplayLsn(),status});
         }                
     }//GEN-LAST:event_buttonReadActionPerformed
-
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
-        sentlsn="";
-        replaylsn="";
-        String temp = combo1.getSelectedItem().toString();
-            String masterip=con.GetProp(temp+".master.ip");
-            String masterport=con.GetProp(temp+".master.port");
-            String masteruser=con.GetProp(temp+".master.user");
-            String masterpass=con.dectext(con.GetProp(temp+".master.password"));
-            String masterdb=con.GetProp(temp+".master.db");
-            String clientaddr=con.GetProp(temp+".slave.ip");
-            String appname=con.GetProp(temp+".slave.appname");
-            String status = getlsn(masterip, masterport, masteruser, masterpass, masterdb, appname, clientaddr, sentlsn, replaylsn);
-
-            master1.setText(sentlsn);
-            slave1.setText(replaylsn);
-            status1.setText(temp+" "+status);
-    }//GEN-LAST:event_jButton3ActionPerformed
 
     private void buttonSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonSaveActionPerformed
         // TODO add your handling code here:
@@ -313,12 +318,75 @@ public class NewJFrame extends javax.swing.JFrame {
     private void combo1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_combo1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_combo1ActionPerformed
-           
-    
+
+    private void cekActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cekActionPerformed
+        // TODO add your handling code here:
+        sentlsn="";
+        replaylsn="";
+        String temp = combo1.getSelectedItem().toString();
+            String masterip=con.GetProp(temp+".master.ip");
+            String masterport=con.GetProp(temp+".master.port");
+            String masteruser=con.GetProp(temp+".master.user");
+            String masterpass=con.dectext(con.GetProp(temp+".master.password"));
+            String masterdb=con.GetProp(temp+".master.db");
+            String clientaddr=con.GetProp(temp+".slave.ip");
+            String appname=con.GetProp(temp+".slave.appname");
+            LsnData data1 = getlsn(masterip, masterport, masteruser,masterpass, masterdb, appname, clientaddr);
+            master1.setText(data1.getSentLsn());
+            slave1.setText(data1.getReplayLsn());
+            status1.setText(temp+" "+data1.getStatus());
+    }//GEN-LAST:event_cekActionPerformed
+
+private LsnData getlsn(
+        String masterip,
+        String masterport,
+        String masteruser,
+        String masterpass,
+        String masterdb,
+        String appname,
+        String clientaddr) {
+    String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb;
+    String sent_lsn="";
+    String replay_lsn="";
+    LsnData data = new LsnData();
+
+    try {
+        Connection connection1= DriverManager.getConnection(jdbcURL1, masteruser,masterpass);
+        String sql1 = "select sent_lsn,replay_lsn from pg_stat_replication "
+           + "where application_name='"+appname+"'"
+           + " and client_addr='"+clientaddr+"'";
+        Statement statement1 = connection1.createStatement();
+            
+        ResultSet result1 = statement1.executeQuery(sql1);
+        while (result1.next()) {
+            sent_lsn = result1.getString("sent_lsn");
+            replay_lsn = result1.getString("replay_lsn");
+        }            
+
+        data.setSentLsn(sent_lsn);
+        data.setReplayLsn(replay_lsn);
+
+        if (replay_lsn == null || replay_lsn.isEmpty()) {
+            data.setStatus("TIDAK SINKRON");
+        } else if (sent_lsn.equals(replay_lsn)) {
+            data.setStatus("SINKRON");
+        } else {
+            data.setStatus("TIDAK SINKRON");
+        }
+        connection1.close();
+        return data;            
+    } catch (SQLException ex) {
+        Logger.getLogger(NewJFrame.class.getName()).log(Level.SEVERE, null, ex);
+        data.setSentLsn("");
+        data.setReplayLsn("");
+        data.setStatus("Koneksi gagal");
+        return data;
+    }       
+}    
+/*    
     private String getlsn(String masterip, String masterport, String masteruser, String masterpass, String masterdb
     ,String appname, String clientaddr, String sentlsn, String replaylsn){
         String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb;
-//        String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb+"?options=-c%20TimeZone=Asia/Jakarta";
         String masterusername = masteruser;
         String masterpassword = masterpass;
         String sent_lsn = "";
@@ -355,7 +423,7 @@ public class NewJFrame extends javax.swing.JFrame {
             return "Koneksi gagal";
         }        
     }
-    
+*/    
     /**
      * @param args the command line arguments
      */
@@ -394,8 +462,8 @@ public class NewJFrame extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buttonRead;
     private javax.swing.JButton buttonSave;
+    private javax.swing.JButton cek;
     private javax.swing.JComboBox<String> combo1;
-    private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
