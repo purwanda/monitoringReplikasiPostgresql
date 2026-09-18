@@ -28,7 +28,13 @@ public class StatusColorRenderer extends DefaultTableCellRenderer {
         Component c = super.getTableCellRendererComponent(
                 table, value, isSelected, hasFocus, row, column);
 
-        String status = table.getModel().getValueAt(row, 5).toString();
+        int modelRow = table.convertRowIndexToModel(row);
+
+        String status = table.getModel()
+                             .getValueAt(modelRow, 5)
+                             .toString();        
+        
+//        String status = table.getModel().getValueAt(row, 5).toString();
 
         if ("TIDAK SINKRON".equals(status)) {
             c.setBackground(Color.YELLOW);

@@ -10,17 +10,23 @@ package javaapplication3;
  * @author Wanda
  */
 
+import java.awt.Color;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static javaapplication3.Configs.replaceLines;
 import javax.swing.JScrollPane;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
 public class NewJFrame extends javax.swing.JFrame {    
     public String masterwal= null;
@@ -29,12 +35,25 @@ public class NewJFrame extends javax.swing.JFrame {
     public String replaylsn=null;
     public String replaylsn2=null;
     Configs con = new Configs();
-    Scanner listproduk = new Scanner(con.GetProp("produk"));    
+    Scanner listproduk = new Scanner(con.GetProp("produk"));
+    private javax.swing.Timer autoTimer;
+    private boolean timerRunning = false;    
     /**
      * Creates new form NewJFrame
      */
     public NewJFrame() {
         initComponents();
+        
+        TableRowSorter<TableModel> sorter =
+        new TableRowSorter<>(tableStatus.getModel());
+        sorter.setComparator(5, (s1, s2) -> {
+            int p1 = getPriority(s1.toString());
+            int p2 = getPriority(s2.toString());
+            return Integer.compare(p1, p2);
+        });
+        tableStatus.setRowSorter(sorter);
+        sorter.toggleSortOrder(5);
+        
         tableStatus.setDefaultRenderer(
             Object.class,
             new StatusColorRenderer()
@@ -61,6 +80,18 @@ public class NewJFrame extends javax.swing.JFrame {
         }
     }
 
+    private int getPriority(String status) {
+        switch (status) {
+            case "TIDAK SINKRON":
+                return 1;
+            case "SEDANG NGEJAR":
+                return 2;
+            case "SINKRON":
+                return 3;
+            default:
+                return 1;
+        }
+    }    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -73,11 +104,11 @@ public class NewJFrame extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         tableStatus = new javax.swing.JTable();
-        buttonRead = new javax.swing.JButton();
-        buttonSave = new javax.swing.JButton();
+        cekall = new javax.swing.JButton();
+        clear = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         combo1 = new javax.swing.JComboBox<>();
-        jButton4 = new javax.swing.JButton();
+        clear2 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         master1 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
@@ -85,9 +116,15 @@ public class NewJFrame extends javax.swing.JFrame {
         status1 = new javax.swing.JLabel();
         cek = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
+        jPanel3 = new javax.swing.JPanel();
+        lama_timer = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        timer = new javax.swing.JToggleButton();
+        jLabel5 = new javax.swing.JLabel();
+        jam = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("monitoring streaming replication postgresql 8.5");
+        setTitle("monitoring streaming replication postgresql 8.7");
 
         jPanel1.setBackground(new java.awt.Color(102, 204, 255));
 
@@ -101,23 +138,23 @@ public class NewJFrame extends javax.swing.JFrame {
         ));
         jScrollPane1.setViewportView(tableStatus);
 
-        buttonRead.setBackground(new java.awt.Color(255, 255, 0));
-        buttonRead.setText("CEK ALL");
-        buttonRead.addActionListener(new java.awt.event.ActionListener() {
+        cekall.setBackground(new java.awt.Color(255, 255, 0));
+        cekall.setText("CEK ALL");
+        cekall.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonReadActionPerformed(evt);
+                cekallActionPerformed(evt);
             }
         });
 
-        buttonSave.setBackground(new java.awt.Color(255, 255, 204));
-        buttonSave.setText("CLEAR");
-        buttonSave.addActionListener(new java.awt.event.ActionListener() {
+        clear.setBackground(new java.awt.Color(255, 255, 204));
+        clear.setText("CLEAR");
+        clear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonSaveActionPerformed(evt);
+                clearActionPerformed(evt);
             }
         });
 
-        jPanel2.setBackground(new java.awt.Color(102, 204, 255));
+        jPanel2.setBackground(new java.awt.Color(204, 204, 255));
         jPanel2.setForeground(new java.awt.Color(153, 204, 255));
 
         combo1.setName("combo1"); // NOI18N
@@ -127,11 +164,11 @@ public class NewJFrame extends javax.swing.JFrame {
             }
         });
 
-        jButton4.setBackground(new java.awt.Color(255, 255, 204));
-        jButton4.setText("CLEAR");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        clear2.setBackground(new java.awt.Color(255, 255, 204));
+        clear2.setText("CLEAR");
+        clear2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                clear2ActionPerformed(evt);
             }
         });
 
@@ -175,7 +212,7 @@ public class NewJFrame extends javax.swing.JFrame {
                     .addComponent(status1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, 85, Short.MAX_VALUE)
+                    .addComponent(clear2, javax.swing.GroupLayout.DEFAULT_SIZE, 85, Short.MAX_VALUE)
                     .addComponent(cek, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -190,7 +227,7 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jButton4)
+                        .addComponent(clear2)
                         .addComponent(master1)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -198,10 +235,63 @@ public class NewJFrame extends javax.swing.JFrame {
                     .addComponent(jLabel3))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(status1)
-                .addContainerGap(24, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jLabel2.setText("Copyright@2026 wanda. All Rights Reserved");
+
+        jPanel3.setBackground(new java.awt.Color(204, 204, 255));
+
+        lama_timer.setText("30");
+
+        jLabel4.setText("Timer (menit)");
+
+        timer.setBackground(java.awt.Color.green);
+        timer.setText("START");
+        timer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                timerActionPerformed(evt);
+            }
+        });
+
+        jLabel5.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel5.setText("AUTO REFRESH");
+        jLabel5.setToolTipText("");
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(lama_timer, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(timer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(70, 70, 70)
+                .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 176, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(71, Short.MAX_VALUE))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, 36, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(timer, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lama_timer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(18, 18, 18))
+        );
+
+        jam.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        jam.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jam.setText("waktu cek all");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -213,12 +303,15 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                            .addComponent(buttonRead, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(buttonSave, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.TRAILING))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                .addComponent(cekall, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(clear, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.TRAILING))
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jam, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -228,11 +321,15 @@ public class NewJFrame extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(19, 19, 19)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(buttonSave, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(buttonRead, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(164, 164, 164)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(clear, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cekall, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jam)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(51, 51, 51)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(45, 45, 45)
                         .addComponent(jLabel2))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addContainerGap()
@@ -256,8 +353,10 @@ public class NewJFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void buttonReadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonReadActionPerformed
+    private void cekallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cekallActionPerformed
         // TODO add your handling code here:
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        jam.setText(sdf.format(new Date()));
         Scanner produk = new Scanner(con.GetProp("produk"));
         produk.useDelimiter(",");
         while (produk.hasNext())
@@ -299,21 +398,21 @@ public class NewJFrame extends javax.swing.JFrame {
 
             DefaultTableModel model = (DefaultTableModel) tableStatus.getModel();
             model.addRow(new Object[]{temp,appname,clientaddr,data1.getSentLsn(),data1.getReplayLsn(),status});
-        }                
-    }//GEN-LAST:event_buttonReadActionPerformed
+        }
+    }//GEN-LAST:event_cekallActionPerformed
 
-    private void buttonSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonSaveActionPerformed
+    private void clearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearActionPerformed
         // TODO add your handling code here:
         DefaultTableModel model = (DefaultTableModel) tableStatus.getModel();
         model.setRowCount(0);        
-    }//GEN-LAST:event_buttonSaveActionPerformed
+    }//GEN-LAST:event_clearActionPerformed
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+    private void clear2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clear2ActionPerformed
         // TODO add your handling code here:
         master1.setText("wal master");
         slave1.setText("wal slave");
         status1.setText("status");        
-    }//GEN-LAST:event_jButton4ActionPerformed
+    }//GEN-LAST:event_clear2ActionPerformed
 
     private void combo1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_combo1ActionPerformed
         // TODO add your handling code here:
@@ -336,6 +435,33 @@ public class NewJFrame extends javax.swing.JFrame {
             slave1.setText(data1.getReplayLsn());
             status1.setText(temp+" "+data1.getStatus());
     }//GEN-LAST:event_cekActionPerformed
+
+    private void timerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timerActionPerformed
+        // TODO add your handling code here:
+        if (!timerRunning) {
+            int interval = Integer.parseInt(lama_timer.getText()) * 60 * 1000;;
+            timerRunning = true;           
+            timer.setBackground(Color.RED);
+            timer.setText("STOP");
+            lama_timer.setEditable(false);
+            clear.doClick();
+            cekall.doClick();
+
+            autoTimer = new javax.swing.Timer(interval, e -> {
+                clear.doClick();
+                cekall.doClick();
+            });
+            autoTimer.start();
+        } else {
+            timerRunning = false;
+            if (autoTimer != null) {
+                autoTimer.stop();
+            }
+            timer.setBackground(Color.GREEN);
+            timer.setText("START");
+            lama_timer.setEditable(true);
+        }        
+    }//GEN-LAST:event_timerActionPerformed
 
 private LsnData getlsn(
         String masterip,
@@ -383,47 +509,6 @@ private LsnData getlsn(
         return data;
     }       
 }    
-/*    
-    private String getlsn(String masterip, String masterport, String masteruser, String masterpass, String masterdb
-    ,String appname, String clientaddr, String sentlsn, String replaylsn){
-        String jdbcURL1="jdbc:postgresql://"+masterip+":"+masterport+"/"+masterdb;
-        String masterusername = masteruser;
-        String masterpassword = masterpass;
-        String sent_lsn = "";
-        String replay_lsn = "";
-        String hasil;
-        try {
-            Connection connection1= DriverManager.getConnection(jdbcURL1, masterusername,masterpassword);
-            String sql1 = "select sent_lsn,replay_lsn from pg_stat_replication "
-                    + "where application_name='"+appname+"'"
-                    + "and client_addr='"+clientaddr+"'";
-            Statement statement1 = connection1.createStatement();
-            
-            ResultSet result1 = statement1.executeQuery(sql1);
-            while (result1.next()) {
-                sent_lsn = result1.getString("sent_lsn");
-                replay_lsn = result1.getString("replay_lsn");
-            }            
-
-            sentlsn = sent_lsn;
-            replaylsn = replay_lsn;
-            this.sentlsn=sentlsn;
-            this.replaylsn=replaylsn;
-            if (replaylsn.isEmpty()) 
-            {hasil="TIDAK SINKRON";}
-            else if (sentlsn.equals(replaylsn)) 
-            {hasil="SINKRON";}
-            else {hasil="TIDAK SINKRON";}
-                
-            connection1.close();
-            return hasil;
-            
-        } catch (SQLException ex) {
-            Logger.getLogger(NewJFrame.class.getName()).log(Level.SEVERE, null, ex);
-            return "Koneksi gagal";
-        }        
-    }
-*/    
     /**
      * @param args the command line arguments
      */
@@ -460,20 +545,26 @@ private LsnData getlsn(
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton buttonRead;
-    private javax.swing.JButton buttonSave;
     private javax.swing.JButton cek;
+    private javax.swing.JButton cekall;
+    private javax.swing.JButton clear;
+    private javax.swing.JButton clear2;
     private javax.swing.JComboBox<String> combo1;
-    private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JLabel jam;
+    private javax.swing.JTextField lama_timer;
     private javax.swing.JLabel master1;
     private javax.swing.JLabel slave1;
     private javax.swing.JLabel status1;
     private javax.swing.JTable tableStatus;
+    private javax.swing.JToggleButton timer;
     // End of variables declaration//GEN-END:variables
 }
